@@ -1,0 +1,149 @@
++var wndMain: wnd@Wnd
++var drawMain: wnd@Draw
++var WIDTH: float
++var HEIGHT: float
++var bulletList: list<\bullet@Bullet>
++var enemy: \enemy@Enemy
++var player: \player@Player
++var font: draw@Font
+func main()
+	var w: int
+	var h: int
+	do wnd@screenSize(&w, &h)
+	do @WIDTH :: w $ float / 10.0 * 8.0
+	do @HEIGHT :: h $ float / 10.0 * 8.0
+	var result: wnd@MsgBoxResult :: wnd@msgBox(null, "ゲームを始めますか？", "ゲーム", %question, %yesNo)
+	if(result = %no)
+		ret
+	end if
+	do @wndMain :: wnd@makeWnd(null, %aspect, @WIDTH $ int, @HEIGHT $ int, "Title")
+	do @drawMain :: wnd@makeDraw(@wndMain, 0, 0, @WIDTH $ int, @HEIGHT $ int, %scale, %scale, false)
+	do @font :: draw@makeFont("Segoe UI Black", 20, false, false, false, 20.0)
+	
+	do @wndMain.setPos(w / 10, h / 10, @WIDTH $ int, @HEIGHT $ int)
+	do @enemy :: #\enemy@Enemy
+	do @player :: #\player@Player
+	do @bulletList :: #list<\bullet@Bullet>
+	do @enemy.init(0.0, 0.0, 100.0, 100.0, 0.0, 0.0, 1)
+	do @player.init(@WIDTH, @HEIGHT, 100.0, 100.0, 0.0, 0.0, 0)
+	
+	while(wnd@act())
+		
+		do draw@render(60)
+		do @enemy.play()
+		do @player.play()
+		
+		if(@enemy.hp <= 0)
+			var r: wnd@MsgBoxResult :: wnd@msgBox(@wndMain, "Playerの勝ち", "Result", %none, %ok)
+			ret
+		end if
+		if(@player.hp <= 0)
+			var r: wnd@MsgBoxResult :: wnd@msgBox(@wndMain, "Enemyの勝ち", "Result", %none, %ok)
+			ret
+		end if
+		
+		func click(wnd: wnd@Draw, x: int, y: int)
+			
+			var mx: int
+			var my: int
+			do input@mousePos(&mx, &my)
+			var wx: int
+			var wy: int
+			var wwidth: int
+			var wheight: int
+			do @wndMain.getPosScreen(&wx, &wy, &wwidth, &wheight)
+			do mx :: mx - wx
+			do my :: my - wy
+			
+			var dx: float :: mx $ float - @player.x - @player.width / 2.0
+			var dy: float :: my $ float - @player.y - @player.height / 2.0
+			var dis: float :: lib@sqrt(dx ^ 2.0 + dy ^ 2.0)
+			var bx: float :: dx / dis * 20.0
+			var by: float :: dy / dis * 20.0
+			
+			var bullet: \bullet@Bullet :: #\bullet@Bullet
+			do bullet.init(@player.x + @player.width / 2.0, @player.y + @player.height / 2.0, 10.0, 10.0, bx, by, 0)
+			do @bulletList.add(bullet)
+		end func
+		do @drawMain.onMouseDownL :: click
+		do @bulletList.head()
+		var eCount: int :: 0
+		var pCount: int :: 0
+		var listCount: int :: 0
+		while(!@bulletList.term())
+			do listCount :+ 1
+			var delF: int :: 0
+			var item: \bullet@Bullet :: @bulletList.get()
+			do item.play()
+			if(item.vanish() = -1 & delF <> 1)
+				do delF :: 1
+			end if
+			;?????????????????
+			var bL: list<\bullet@Bullet> :: ##@bulletList
+			do bL.head()
+			var listCount2: int :: 0
+			while(!bL.term() & delF <> 1)
+				do listCount2 :+ 1
+				var i: \bullet@Bullet :: bL.get()
+				if(game@hitRectRect(item, i, 10.0, 10.0, 1.0, 1.0) <> %none)
+					var tvx: float :: item.veloX
+					var tvy: float :: item.veloY
+					do item.veloY :: i.veloX
+					do item.veloX :: i.veloY
+					
+					do @bulletList.head()
+					if(listCount2 <> 1)
+						for(1, listCount2 - 1)
+							do @bulletList.next()
+						end for
+					end if
+					
+					do @bulletList.get().veloY :: tvx
+					do @bulletList.get().veloX :: tvy
+					
+					do @bulletList.head()
+					if(listCount <> 1)
+						for(1, listCount - 1)
+							do @bulletList.next()
+						end for
+					end if
+					
+				end if
+				
+				do bL.next()
+			end while
+			
+			;???????????????????
+			if(item.flag = 0 & delF <> 1)
+				do pCount :+ 1
+				if(pCount > 3)
+					do delF :: 1
+				end if
+				if(game@hitRectRect(item, @enemy, 10.0, 10.0, 1.0, 1.0) <> %none)
+					do @enemy.hp :- 1
+					do @enemy.addvx :: item.veloX
+					do @enemy.addvy :: item.veloY
+					do delF :: 1
+				end if
+			end if
+			if(item.flag = 1 & delF <> 1)
+				do eCount :+ 1
+				if(eCount > 3)
+					do delF :: 1
+				end if
+				if(game@hitRectRect(item, @player, 10.0, 10.0, 1.0, 1.0) <> %none)
+					do @player.hp :- 1
+					do @player.addvx :: item.veloX
+					do @player.addvy :: item.veloY
+					do delF :: 1
+				end if
+			end if
+			if(delF = 1)
+				do @bulletList.del()
+			else
+				do @bulletList.next()
+			end if
+		end while
+	end while
+end func
+

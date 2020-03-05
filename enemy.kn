@@ -1,0 +1,155 @@
++class Enemy(game@Rect)
+	+var flag: int
+	var time: int
+	+var hp: int
+	+var addvx: float
+	+var addvy: float
+	+func init(x: float, y: float, width: float, height: float, veloX: float, veloY: float, flag: int)
+		do me.x :: x
+		do me.y :: y
+		do me.width :: width
+		do me.height :: height
+		do me.veloX :: veloX
+		do me.veloY :: veloY
+		do me.flag :: flag
+		do me.hp :: 10
+	end func
+	+func draw()
+		do \main@font.draw(\main@WIDTH - 300.0, 1.0, "Enemy HP:\{me.hp}", 0xFFCCCCFF)
+		do draw2d@rect(me.x, me.y, me.width, me.height, 0xFF3333CC)
+	end func
+	+func control()
+		
+		var vxF: int
+		var vyF: int
+		var edgedX: float :: \main@WIDTH - me.x - me.width / 2.0
+		var edgedY: float :: \main@HEIGHT - me.y - me.height / 2.0
+		do \main@bulletList.head()
+		while(!\main@bulletList.term())
+			var item: \bullet@Bullet :: \main@bulletList.get()
+			var dx: float :: (-me.x - me.width / 2.0 + item.x + item.width / 2.0 + item.veloX)
+			var dy: float :: (-me.y - me.height / 2.0 + item.y + item.height / 2.0 + item.veloY)
+			
+			if(item.flag = 0 & dx.abs() < 200.0 & dy.abs() < 200.0)
+				if(me.y + me.height / 2.0 > 200.0 & edgedY > 200.0)
+					if(dy < 0.0)
+						do vyF :: 4
+					else
+						do vyF :: 3
+					end if
+				end if
+				
+				if(me.x + me.width / 2.0 > 200.0 & edgedX > 200.0)
+					if(dx < 0.0)
+						do vxF :: 2
+					else
+						do vxF :: 1
+					end if
+				end if
+				
+			end if
+			
+			do \main@bulletList.next()
+		end while
+		
+		
+		
+		if(me.y + me.height / 2.0 < 300.0 & me.x + me.width / 2.0 < 300.0)
+			if(me.time % 500 <= 249)
+				do vxF :: 2
+			else
+				do vyF :: 4
+			end if
+		end if
+		if(me.x + me.width / 2.0 < 300.0 & edgedY < 300.0)
+			if(me.time % 500 <= 249)
+				do vxF :: 2
+			else
+				do vyF :: 3
+			end if
+		end if
+		if(edgedY < 300.0 & edgedX < 300.0)
+			if(me.time % 500 <= 249)
+				do vxF :: 1
+			else
+				do vyF :: 3
+			end if
+		end if
+		if(edgedX < 300.0 & me.y + me.height / 2.0 < 300.0)
+			if(me.time % 500 <= 249)
+				do vxF :: 1
+			else
+				do vyF :: 4
+			end if
+		end if
+		
+		if(me.time % 15 = 0)
+			do vxF :: lib@rnd(1, 2)
+			do vyF :: lib@rnd(3, 4)
+		end if
+		
+		switch(vxF)
+		case 1
+			do me.veloX :: -10.0
+		case 2
+			do me.veloX :: 10.0
+		end switch
+		switch(vyF)
+		case 3
+			do me.veloY :: -10.0
+		case 4
+			do me.veloY :: 10.0
+		end switch
+		
+		if(me.y + me.height > \main@HEIGHT)
+			do me.y :: \main@HEIGHT - me.height
+		end if
+		if(me.y < 0.0)
+			do me.y :: 0.0
+		end if
+		if(me.x < 0.0)
+			do me.x :: 0.0
+		end if
+		if(me.x + me.width > \main@WIDTH)
+			do me.x :: \main@WIDTH - me.width
+		end if
+	end func
+	+func shoot()
+		var range: float :: lib@rndFloat(-1.5, 1.5)
+		var dx: float :: \main@player.x + \main@player.width / 2.0 - me.x - me.width / 2.0
+		var dy: float :: \main@player.y + \main@player.height / 2.0 - me.y - me.height / 2.0
+		var dis: float :: lib@sqrt(dx ^ 2.0 + dy ^ 2.0)
+		var t: float :: dis / 20.0
+		var dx2: float :: \main@player.x + \main@player.width / 2.0 + \main@player.veloX * t * range - me.x - me.width / 2.0
+		var dy2: float :: \main@player.y + \main@player.height / 2.0 + \main@player.veloY * t * range - me.y - me.height / 2.0
+		var dis2: float :: lib@sqrt(dx2 ^ 2.0 + dy2 ^ 2.0)
+		if(dis2 = 0.0)
+			do dis2 :: 0.1
+		end if
+		var bx: float :: dx2 / dis2 * 20.0
+		var by: float :: dy2 / dis2 * 20.0
+		
+		
+		var bullet: \bullet@Bullet :: #\bullet@Bullet
+		do bullet.init(me.x + me.width / 2.0, me.y + me.height / 2.0, 10.0, 10.0, bx, by, 1)
+		do \main@bulletList.add(bullet)
+	end func
+	+func act()
+		do me.time :+ 1
+		do me.x :+ me.veloX + me.addvx
+		do me.y :+ me.veloY + me.addvy
+		do me.veloX :/ 1.1
+		do me.veloY :/ 1.1
+		do me.addvx :/ 1.1
+		do me.addvy :/ 1.1
+	end func
+	+func play()
+		do me.draw()
+		do me.act()
+		do me.control()
+		var shootF: int :: lib@rnd(1, 10)
+		if(shootF = 1)
+			do me.shoot()
+		end if
+	end func
+end class

@@ -1,0 +1,65 @@
++class Player(game@Rect)
+	+var flag: int
+	var time: int
+	+var hp: int
+	+var addvx: float
+	+var addvy: float
+	+func init(x: float, y: float, width: float, height: float, veloX: float, veloY: float, flag: int)
+		do me.x :: x
+		do me.y :: y
+		do me.width :: width
+		do me.height :: height
+		do me.veloX :: veloX
+		do me.veloY :: veloY
+		do me.flag :: flag
+		do me.hp :: 10
+	end func
+	+func draw()
+		do \main@font.draw(1.0, 1.0, "Player HP:\{me.hp}", 0xFFFFCCCC)
+		do draw2d@rect(me.x, me.y, me.width, me.height, 0xFFCC3333)
+	end func
+	+func control()
+		
+		if(input@key(%left) = true | input@key(%a) = true)
+			do me.veloX :: -10.0
+		end if
+		if(input@key(%right) = true | input@key(%d) = true)
+			do me.veloX :: 10.0
+		end if
+		if(input@key(%up) = true | input@key(%w) = true)
+			do me.veloY :: -10.0
+		end if
+		if(input@key(%down) = true | input@key(%s) = true)
+			do me.veloY :: 10.0
+		end if
+		
+		if(me.y + me.height > \main@HEIGHT)
+			do me.y :: \main@HEIGHT - me.height
+		end if
+		if(me.y < 0.0)
+			do me.y :: 0.0
+		end if
+		if(me.x < 0.0)
+			do me.x :: 0.0
+		end if
+		if(me.x + me.width > \main@WIDTH)
+			do me.x :: \main@WIDTH - me.width
+		end if
+	end func
+	
+	+func act()
+		do me.time :+ 1
+		do me.x :+ me.veloX + me.addvx
+		do me.y :+ me.veloY + me.addvy
+		do me.veloX :/ 1.1
+		do me.veloY :/ 1.1
+		do me.addvx :/ 1.1
+		do me.addvy :/ 1.1
+	end func
+	+func play()
+		do me.draw()
+		do me.act()
+		do me.control()
+		
+	end func
+end class
